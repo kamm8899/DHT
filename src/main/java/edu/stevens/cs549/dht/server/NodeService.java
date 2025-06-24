@@ -41,11 +41,76 @@ public class NodeService extends DhtServiceImplBase {
 	private Dht getDht() {
 		return Dht.getDht();
 	}
+	private void error(String mesg, Exception e) {
+		logger.log(Level.SEVERE, mesg, e);
+	}
 	
 	// TODO: add the missing operations
 
-	private void error(String mesg, Exception e) {
-		logger.log(Level.SEVERE, mesg, e);
+	@Override
+	public void getPred(Empty empty, StreamObserver<OptNodeInfo> responseObserver) {
+		Log.weblog(TAG, "getPred()");
+		responseObserver.onNext(getDht().getPred());
+		responseObserver.onCompleted();
+	}
+
+	@Override
+	public void getSucc(Empty empty, StreamObserver<NodeInfo> responseObserver) {
+		Log.weblog(TAG, "getSucc()");
+		responseObserver.onNext(getDht().getSucc());
+		responseObserver.onCompleted();
+	}
+
+	@Override
+	public void findSuccessor(Id id, StreamObserver<NodeInfo> responseObserver) {
+		Log.weblog(TAG, "findSuccessor(" + id.getId() + ")");
+		try {
+			NodeInfo result = getDht().findSuccessor(id);
+			responseObserver.onNext(result);
+			responseObserver.onCompleted();
+		} catch (Failed | Invalid e) {
+			error("findSuccessor failed", e);
+			responseObserver.onError(e);
+		}
+	}
+
+	@Override
+	public void notify(NodeBindings predDb, StreamObserver<OptNodeBindings> responseObserver) {
+		Log.weblog(TAG, "notify(" + predDb.getNode().getId() + ")");
+		try {
+			OptNodeBindings result = getDht().notify(predDb);
+			responseObserver.onNext(result);
+			responseObserver.onCompleted();
+		} catch (Failed e) {
+			error("notify failed", e);
+			responseObserver.onError(e);
+		}
+	}
+
+	@Override
+	public void getBindings(NodeInfo caller, StreamObserver<Bindings> responseObserver) {
+		Log.weblog(TAG, "getBindings(" + caller.getId() + ")");
+		try {
+			Bindings bindings = getDht().getBindings(caller);
+			responseObserver.onNext(bindings);
+			responseObserver.onCompleted();
+		} catch (Failed e) {
+			error("getBindings failed", e);
+			responseObserver.onError(e);
+		}
+	}
+
+	@Override
+	public void addBinding(NodeBindings request, StreamObserver<Empty> responseObserver) {
+		Log.weblog(TAG, "addBinding()");
+		try {
+			getDht().addBinding(request);
+			responseObserver.onNext(Empty.getDefaultInstance());
+			responseObserver.onCompleted();
+		} catch (Failed e) {
+			error("addBinding failed", e);
+			responseObserver.onError(e);
+		}
 	}
 
 	@Override

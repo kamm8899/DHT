@@ -66,6 +66,7 @@ public class WebClient {
 	/*
 	 * Get the predecessor pointer at a node.
 	 */
+
 	public OptNodeInfo getPred(NodeInfo node) {
 		Log.weblog(TAG, "getPred("+node.getId()+")");
 		return getStub(node).getPred(Empty.getDefaultInstance());
@@ -87,8 +88,78 @@ public class WebClient {
 		 * avoid because to do so is infeasible), it notifies us by returning
 		 * null.
 		 */
-		return null;
+
+
+		Log.weblog(TAG, "notify(" + node.getId() + ")");
+
+		try {
+			// Create a stub for the target node
+			DhtServiceGrpc.DhtServiceBlockingStub stub = getStub(node);
+
+			// Make the remote call to notify the target node
+			OptNodeBindings response = stub.notify(predDb);
+
+			// Check if the response contains bindings
+			if (response == null || !response.hasBindings()) {
+				Log.weblog(TAG, "notify(" + node.getId() + ") was rejected or returned no bindings.");
+				return null;
+			}
+
+			// Log success and return the bindings
+			Log.weblog(TAG, "notify(" + node.getId() + ") accepted.");
+			return response;
+
+		} catch (Exception e) {
+			error("Notify failed for node " + node.getId(), e);
+			throw new DhtBase.Failed("Notify RPC failed: " + e.getMessage());
+		}
+	}
+	/*
+	 * Get the successor pointer at a node.
+	 */
+	public NodeInfo findSuccessor(NodeInfo node, Id id) throws DhtBase.Failed {
+		Log.weblog(TAG, "findSuccessor(" + id.getId() + ") at node " + node.getId());
+		try {
+			return getStub(node).findSuccessor(id);
+		} catch (Exception e) {
+			error("findSuccessor RPC failed", e);
+			throw new DhtBase.Failed("findSuccessor RPC failed");
+		}
 	}
 
+	public NodeInfo getSucc(NodeInfo node) throws DhtBase.Failed {
+		Log.weblog(TAG, "getSucc(" + node.getId() + ")");
+		try {
+			return getStub(node).getSucc(Empty.getDefaultInstance());
+		} catch (Exception e) {
+			error("getSucc RPC failed", e);
+			throw new DhtBase.Failed("getSucc RPC failed");
+		}
+	}
+	/*
+	 * Get the bindings for a key at a node.
+	 */
+	public void addBinding(NodeInfo node, Key key, Binding val) throws DhtBase.Failed {
+		Log.weblog(TAG, "addBinding(" + key.getKey() + ", " + val.getVal() + ") at node " + node.getId());
+		try {
+			NodeBindings bindings = NodeBindings.newBuilder()
+					.setNode(node)
+					.setBindings(Bindings.newBuilder().addBindings(val).build())
+					.build();
+			getStub(node).addBinding(bindings);
+		} catch (Exception e) {
+			error("addBinding RPC failed", e);
+			throw new DhtBase.Failed("addBinding RPC failed");
+		}
+	}
+	public Bindings getBindings(NodeInfo node, Key key) throws DhtBase.Failed {
+		Log.weblog(TAG, "getBindings(" + key.getKey() + ") at node " + node.getId());
+		try {
+			return getStub(node).getBindings(key);
+		} catch (Exception e) {
+			error("getBindings RPC failed", e);
+			throw new DhtBase.Failed("getBindings RPC failed");
+		}
+	}
 
 }

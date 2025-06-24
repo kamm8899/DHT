@@ -106,9 +106,8 @@ public class Dht extends DhtBase implements IDhtService, IDhtNode, IDhtBackgroun
 			return getSucc();
 		} else {
 			// TODO: Do the Web service call
+			return client.getSucc(info);
 
-
-			return null;
 		}
 	}
 
@@ -143,7 +142,7 @@ public class Dht extends DhtBase implements IDhtService, IDhtNode, IDhtBackgroun
 			/*
 			 * TODO: Do the Web service call
 			 */
-			return null;
+			return client.getPred(info);
 		}
 	}
 
@@ -175,7 +174,7 @@ public class Dht extends DhtBase implements IDhtService, IDhtNode, IDhtBackgroun
 				/*
 				 * TODO: Do the Web service call to the remote node.
 				 */
-				return null;
+				return client.closestPrecedingFinger(info, id);
 			} else {
 				/*
 				 * Without finger tables, just use the successor pointer.
@@ -457,7 +456,7 @@ public class Dht extends DhtBase implements IDhtService, IDhtNode, IDhtBackgroun
 			 * 
 			 * TODO: Do the Web service call.
 			 */
-			return null;
+			return client.get(n, k);
 		}
 	}
 
@@ -484,6 +483,7 @@ public class Dht extends DhtBase implements IDhtService, IDhtNode, IDhtBackgroun
 			/*
 			 * TODO: Do the Web service call.
 			 */
+			client.add(n, k, v);
 
 		}
 	}
@@ -537,6 +537,7 @@ public class Dht extends DhtBase implements IDhtService, IDhtNode, IDhtBackgroun
 			/*
 			 * TODO: Do the Web service call.
 			 */
+			client.delete(n, k, v);
 
 		}
 	}
@@ -622,7 +623,20 @@ public class Dht extends DhtBase implements IDhtService, IDhtNode, IDhtBackgroun
 		 * that it keeps its own bindings, to which it adds those it transfers
 		 * from us.
 		 */
+		Node client = NodeClientFactory.getClient(host, port);
+		succ = client.findSuccessor(info.getId());
 
+		setSucc(succ);
+
+		// Clear any local bindings to start fresh
+		clearBindings();
+
+		// Ask the successor to give us the bindings we should hold
+		Map<String, String> bindings = getSucc().getBindings(info); // getSucc() returns a Node stub
+		updateBindings(bindings);
+
+		// Stabilize the ring
+		stabilize();
 
 	}
 
