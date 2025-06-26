@@ -37,6 +37,7 @@ public interface IState {
 	 * Clear all bindings (necessary if a node joins a network with pre-existing
 	 * bindings).
 	 */
+
 	public void clear();
 
 	/*

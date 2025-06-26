@@ -3,6 +3,7 @@ package edu.stevens.cs549.dht.activity;
 import edu.stevens.cs549.dht.main.Log;
 import edu.stevens.cs549.dht.main.WebClient;
 import edu.stevens.cs549.dht.rpc.NodeBindings;
+import edu.stevens.cs549.dht.rpc.Bindings;
 import edu.stevens.cs549.dht.rpc.NodeInfo;
 import edu.stevens.cs549.dht.rpc.OptNodeBindings;
 import edu.stevens.cs549.dht.rpc.OptNodeInfo;
@@ -161,6 +162,15 @@ public class Dht extends DhtBase implements IDhtService, IDhtNode, IDhtBackgroun
 		routing.setPred(pred);
 	}
 
+
+	/*
+	 * For the local version, get from the routing table.
+	 */
+	// WebMethod
+	public NodeInfo closestPrecedingFinger(int id) {
+		return routing.closestPrecedingFinger(id);
+	}
+
 	/*
 	 * Perform a Web service call to get the closest preceding finger in the
 	 * finger table of the argument node.
@@ -184,13 +194,6 @@ public class Dht extends DhtBase implements IDhtService, IDhtNode, IDhtBackgroun
 		}
 	}
 
-	/*
-	 * For the local version, get from the routing table.
-	 */
-	// WebMethod
-	public NodeInfo closestPrecedingFinger(int id) {
-		return routing.closestPrecedingFinger(id);
-	}
 
 	/*
 	 * Set a finger pointer.
@@ -442,6 +445,7 @@ public class Dht extends DhtBase implements IDhtService, IDhtNode, IDhtBackgroun
 	 * Get the values under a key at the specified node. If the node is the
 	 * current one, go to the local state.
 	 */
+
 	protected String[] get(NodeInfo n, String k) throws Failed {
 		if (isEqual(n, getNodeInfo())) {
 			try {
@@ -525,6 +529,28 @@ public class Dht extends DhtBase implements IDhtService, IDhtNode, IDhtBackgroun
 	/*
 	 * Delete value under a key.
 	 */
+	//added this
+	// Store a key-value binding using existing state method.
+	public void addBinding(String key, String value) throws Failed {
+		try {
+			state.add(key, value);  // Uses already-defined method
+		} catch (Exception e) {
+			throw new Failed("Failed to add binding: " + e.getMessage());
+		}
+	}
+	//added this as well
+	public Bindings getBindings(String key) throws Failed {
+		try {
+			String[] values = state.get(key);  // This is legal
+			Bindings.Builder builder = Bindings.newBuilder().setKey(key);
+			for (String v : values) {
+				builder.addValue(v);
+			}
+			return builder.build();
+		} catch (Exception e) {
+			throw new Failed("Failed to get bindings: " + e.getMessage());
+		}
+	}
 	public void delete(NodeInfo n, String k, String v) throws Failed {
 		if (isEqual(n, getNodeInfo())) {
 			try {
@@ -651,6 +677,7 @@ public class Dht extends DhtBase implements IDhtService, IDhtNode, IDhtBackgroun
 	public void routes() {
 		routing.routes();
 	}
+
 	
 
 }

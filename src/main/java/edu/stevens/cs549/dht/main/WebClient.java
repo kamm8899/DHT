@@ -100,7 +100,7 @@ public class WebClient {
 			OptNodeBindings response = stub.notify(predDb);
 
 			// Check if the response contains bindings
-			if (response == null || !response.hasBindings()) {
+			if (response == null || !response.hasNodeBindings()) {
 				Log.weblog(TAG, "notify(" + node.getId() + ") was rejected or returned no bindings.");
 				return null;
 			}
@@ -140,13 +140,15 @@ public class WebClient {
 	 * Get the bindings for a key at a node.
 	 */
 	public void addBinding(NodeInfo node, Key key, Binding val) throws DhtBase.Failed {
-		Log.weblog(TAG, "addBinding(" + key.getKey() + ", " + val.getVal() + ") at node " + node.getId());
+		Log.weblog(TAG, "addBinding(" + key.getKey() + ", " + val.getValue() + ") at node " + node.getId());
 		try {
-			NodeBindings bindings = NodeBindings.newBuilder()
-					.setNode(node)
-					.setBindings(Bindings.newBuilder().addBindings(val).build())
+			// Build a simple Binding message
+			Binding binding = Binding.newBuilder()
+					.setKey(key.getKey())
+					.setValue(val.getValue())
 					.build();
-			getStub(node).addBinding(bindings);
+
+			getStub(node).addBinding(binding);  // ✅ now using correct type
 		} catch (Exception e) {
 			error("addBinding RPC failed", e);
 			throw new DhtBase.Failed("addBinding RPC failed");

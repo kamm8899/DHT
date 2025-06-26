@@ -3,7 +3,7 @@ package edu.stevens.cs549.dht.server;
 import com.google.protobuf.Empty;
 import edu.stevens.cs549.dht.activity.Dht;
 import edu.stevens.cs549.dht.activity.DhtBase.Failed;
-import edu.stevens.cs549.dht.activity.DhtBase.Invalid;
+//import edu.stevens.cs549.dht.activity.DhtBase.Invalid;
 import edu.stevens.cs549.dht.main.Log;
 import edu.stevens.cs549.dht.rpc.*;
 import edu.stevens.cs549.dht.rpc.DhtServiceGrpc.DhtServiceImplBase;
@@ -65,46 +65,28 @@ public class NodeService extends DhtServiceImplBase {
 	public void findSuccessor(Id id, StreamObserver<NodeInfo> responseObserver) {
 		Log.weblog(TAG, "findSuccessor(" + id.getId() + ")");
 		try {
-			NodeInfo result = getDht().findSuccessor(id);
+			NodeInfo result = getDht().findSuccessor(id.getId());
 			responseObserver.onNext(result);
 			responseObserver.onCompleted();
-		} catch (Failed | Invalid e) {
+		} catch (Failed e) {
 			error("findSuccessor failed", e);
 			responseObserver.onError(e);
 		}
 	}
 
 	@Override
-	public void notify(NodeBindings predDb, StreamObserver<OptNodeBindings> responseObserver) {
-		Log.weblog(TAG, "notify(" + predDb.getNode().getId() + ")");
-		try {
-			OptNodeBindings result = getDht().notify(predDb);
-			responseObserver.onNext(result);
-			responseObserver.onCompleted();
-		} catch (Failed e) {
-			error("notify failed", e);
-			responseObserver.onError(e);
-		}
+	public void notify(NodeBindings request, StreamObserver<OptNodeBindings> responseObserver) {
+		Log.weblog(TAG, "notify(" + request.getInfo().getId() + ")");
+		OptNodeBindings result = getDht().notify(request);
+		responseObserver.onNext(result);
+		responseObserver.onCompleted();
 	}
 
 	@Override
-	public void getBindings(NodeInfo caller, StreamObserver<Bindings> responseObserver) {
-		Log.weblog(TAG, "getBindings(" + caller.getId() + ")");
-		try {
-			Bindings bindings = getDht().getBindings(caller);
-			responseObserver.onNext(bindings);
-			responseObserver.onCompleted();
-		} catch (Failed e) {
-			error("getBindings failed", e);
-			responseObserver.onError(e);
-		}
-	}
-
-	@Override
-	public void addBinding(NodeBindings request, StreamObserver<Empty> responseObserver) {
+	public void addBinding(Binding request, StreamObserver<Empty> responseObserver) {
 		Log.weblog(TAG, "addBinding()");
 		try {
-			getDht().addBinding(request);
+			getDht().addBinding(request.getKey(), request.getValue());
 			responseObserver.onNext(Empty.getDefaultInstance());
 			responseObserver.onCompleted();
 		} catch (Failed e) {
@@ -113,6 +95,18 @@ public class NodeService extends DhtServiceImplBase {
 		}
 	}
 
+	@Override
+	public void getBindings(Key request, StreamObserver<Bindings> responseObserver) {
+		Log.weblog(TAG, "getBindings(" + request.getKey() + ")");
+		try {
+			Bindings bindings = getDht().getBindings(request.getKey());
+			responseObserver.onNext(bindings);
+			responseObserver.onCompleted();
+		} catch (Failed e) {
+			error("getBindings failed", e);
+			responseObserver.onError(e);
+		}
+	}
 	@Override
 	public void getNodeInfo(Empty empty, StreamObserver<NodeInfo> responseObserver) {
 		Log.weblog(TAG, "getNodeInfo()");
