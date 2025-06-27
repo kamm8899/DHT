@@ -4,9 +4,12 @@ import edu.stevens.cs549.dht.main.Log;
 import edu.stevens.cs549.dht.main.WebClient;
 import edu.stevens.cs549.dht.rpc.NodeBindings;
 import edu.stevens.cs549.dht.rpc.Bindings;
+import edu.stevens.cs549.dht.rpc.Binding;
 import edu.stevens.cs549.dht.rpc.NodeInfo;
 import edu.stevens.cs549.dht.rpc.OptNodeBindings;
 import edu.stevens.cs549.dht.rpc.OptNodeInfo;
+import edu.stevens.cs549.dht.rpc.Key;
+import edu.stevens.cs549.dht.rpc.Id;
 import edu.stevens.cs549.dht.state.IRouting;
 import edu.stevens.cs549.dht.state.IState;
 import edu.stevens.cs549.dht.state.State;
@@ -460,7 +463,14 @@ public class Dht extends DhtBase implements IDhtService, IDhtNode, IDhtBackgroun
 			 * 
 			 * TODO: Do the Web service call.
 			 */
-			return client.get(n, k);
+			try {
+				Key keyMsg = Key.newBuilder().setKey(k).build();
+				Bindings bindings = client.getBindings(n, keyMsg);
+				return bindings.getValueList().toArray(new String[0]);
+			} catch (Exception e) {
+				severe("Remote get failed for key: " + k + " on node " + n.getId() + " - " + e.getMessage());
+				throw new Failed("Remote get failed: " + e.getMessage());
+			}
 		}
 	}
 
@@ -487,8 +497,9 @@ public class Dht extends DhtBase implements IDhtService, IDhtNode, IDhtBackgroun
 			/*
 			 * TODO: Do the Web service call.
 			 */
-			client.add(n, k, v);
-
+			Key keyMsg = Key.newBuilder().setKey(k).build();
+			Binding bindingMsg = Binding.newBuilder().setKey(k).setValue(v).build();
+			client.addBinding(n, keyMsg, bindingMsg);  //
 		}
 	}
 
@@ -563,8 +574,11 @@ public class Dht extends DhtBase implements IDhtService, IDhtNode, IDhtBackgroun
 			/*
 			 * TODO: Do the Web service call.
 			 */
-			client.delete(n, k, v);
-
+			Binding bindingMsg = Binding.newBuilder()
+					.setKey(k)
+					.setValue(v)
+					.build();
+			client.delete(n, bindingMsg);
 		}
 	}
 
@@ -649,20 +663,39 @@ public class Dht extends DhtBase implements IDhtService, IDhtNode, IDhtBackgroun
 		 * that it keeps its own bindings, to which it adds those it transfers
 		 * from us.
 		 */
-		Node client = NodeClientFactory.getClient(host, port);
-		succ = client.findSuccessor(info.getId());
+		// Create a NodeInfo for the contact node (the known peer)
+		NodeInfo contact = NodeInfo.newBuilder()
+				.setHost(host)
+				.setPort(port)
+				.build();
 
+		// Find the successor of our node ID by calling the contact node
+		succ = client.findSuccessor(contact, Id.newBuilder().setId(info.getId()).build());
+
+		// Set our local successor
 		setSucc(succ);
 
-		// Clear any local bindings to start fresh
-		clearBindings();
+		// Clear any local bindings (we are starting fresh)
+		state.clear();
+
+		// Extract our (currently empty) bindings to notify the successor
+		NodeBindings localBindings = state.extractBindings(info.getId());
+
+		// Notify the successor with our presence and bindings
+		OptNodeBindings received = client.notify(succ, localBindings);
+
+		// If the successor accepts us, install the bindings it transfers back
+		if (received != null && received.hasNodeBindings()) {
+			state.installBindings(received.getNodeBindings());
+		}
+
+		// Stabilize the ring to ensure bidirectional links
+		stabilize();
 
 		// Ask the successor to give us the bindings we should hold
-		Map<String, String> bindings = getSucc().getBindings(info); // getSucc() returns a Node stub
-		updateBindings(bindings);
+		//Map<String, String> bindings = getSucc().getBindings(info); // getSucc() returns a Node stub
+		//updateBindings(bindings);
 
-		// Stabilize the ring
-		stabilize();
 
 	}
 

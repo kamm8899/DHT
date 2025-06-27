@@ -71,7 +71,9 @@ public class WebClient {
 		Log.weblog(TAG, "getPred("+node.getId()+")");
 		return getStub(node).getPred(Empty.getDefaultInstance());
 	}
-
+	public void delete(NodeInfo node, Binding binding) throws DhtBase.Failed {
+		getStub(node).deleteBinding(binding);
+	}
 
 	/*
 	 * Notify node that we (think we) are its predecessor.
@@ -124,6 +126,16 @@ public class WebClient {
 		} catch (Exception e) {
 			error("findSuccessor RPC failed", e);
 			throw new DhtBase.Failed("findSuccessor RPC failed");
+		}
+	}
+	public NodeInfo closestPrecedingFinger(NodeInfo node, int id) throws DhtBase.Failed {
+		Log.weblog(TAG, "closestPrecedingFinger(" + id + ") at node " + node.getId());
+		try {
+			Id request = Id.newBuilder().setId(id).build();
+			return getStub(node).closestPrecedingFinger(request);
+		} catch (Exception e) {
+			error("closestPrecedingFinger RPC failed", e);
+			throw new DhtBase.Failed("closestPrecedingFinger RPC failed");
 		}
 	}
 

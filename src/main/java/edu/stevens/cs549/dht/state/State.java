@@ -218,13 +218,14 @@ public class State implements IState, IRouting {
 		/*
 		 * TODO: Set the ith finger.
 		 */
+		finger[i] = info;
 	}
 
 	public synchronized NodeInfo getFinger(int i) {
 		/*
 		 * TODO: Get the ith finger.
 		 */
-		return null;
+		return finger[i];
 	}
 
 	public synchronized NodeInfo closestPrecedingFinger(int id) {
@@ -232,9 +233,15 @@ public class State implements IState, IRouting {
 		 * TODO: Get closest preceding finger for id, to continue search at that
 		 * node. Hint: See DHTBase.inInterval()
 		 */
-
+		for (int i = finger.length - 1; i >= 0; i--) {
+			NodeInfo f = finger[i];
+			if (f != null && DhtBase.inInterval(f.getId(), info.getId(), id)) {
+				return f;
+			}
+		}
 		return null;
 	}
+
 
 	public synchronized void routes() {
 		PrintWriter wr = new PrintWriter(System.out);
