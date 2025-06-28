@@ -239,7 +239,7 @@ public class State implements IState, IRouting {
 				return f;
 			}
 		}
-		return null;
+		return info;
 	}
 
 
