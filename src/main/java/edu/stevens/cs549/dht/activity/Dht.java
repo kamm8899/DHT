@@ -515,21 +515,40 @@ public class Dht extends DhtBase implements IDhtService, IDhtNode, IDhtBackgroun
 		NodeInfo info = getNodeInfo();
 		OptNodeInfo pred = getPred();
 
+		//added for debugging
+		info("ADD DEBUG: key=\"" + k + "\", id=" + kid);
+		info("ADD DEBUG: this node id=" + info.getId());
+
+		if (pred.hasNodeInfo()) {
+			info("ADD DEBUG: pred id=" + pred.getNodeInfo().getId());
+		} else {
+			info("ADD DEBUG: pred is null");
+		}
+
+		//stop added for debugging
+		info("ADD DEBUG: succ id=" + getSucc().getId());
+
 		if (pred.hasNodeInfo() && inInterval(kid, pred.getNodeInfo().getId(), info.getId(), true)) {
+			//added for debugging
+			info("ADD DEBUG: Storing key locally — in responsible interval.");
 			/*
 			 * This node covers the interval in which k should be stored.
 			 */
 			state.add(k, v);
 		} else if (!pred.hasNodeInfo() && isEqual(info, getSucc())) {
+			//added for debugging
+			info("ADD DEBUG: Single-node network case.");
 			/*
 			 * Single-node network.
 			 */
 			state.add(k, v);
 		} else if (info.getId() == kid) {
+			//added for debugging
+			info("ADD DEBUG: Exact node ID match.");
 			/*
 			 * ???
 			 */
-			state.add(k, v);			
+			state.add(k, v);
 		} else if (!pred.hasNodeInfo() && !isEqual(info, getSucc())) {
 			severe("Add: predecessor is null but not a single-node network.");
 		} else {
